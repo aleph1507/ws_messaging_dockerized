@@ -1,6 +1,29 @@
 let user = null;
 
-class DOMCtrl {
+class DOMCtrlSingleton {
+    get username() {
+        return this._username;
+    }
+
+    set username(value) {
+        this._username = value;
+    }
+
+    get channel() {
+        return this._channel;
+    }
+
+    set channel(value) {
+        this._channel = value;
+    }
+
+    get websocket() {
+        return this._websocket;
+    }
+
+    set websocket(value) {
+        this._websocket = value;
+    }
     joinForm = document.getElementById("join-form");
     usernameInput = document.getElementById("username");
     channelsInput = document.getElementById("channels");
@@ -17,18 +40,21 @@ class DOMCtrl {
     static instance = null;
 
     constructor({username, channel, websocket}) {
-        this.username = username || null;
-        this.channel = channel || null;
-        this.websocket = websocket;
+        this._username = username;
+        this._channel = channel;
+        this._websocket = websocket;
         this.init();
+
     }
 
-    static getInstance({username, channel, websocket}) {
-        if (!DOMCtrl.instance) {
-            DOMCtrl.instance = new DOMCtrl({username, channel, websocket});
+    static getInstance({username = user ? user.name : null,
+                           channel = user ? user.channel : null,
+                           websocket = new WSCtrl()}) {
+        if (!DOMCtrlSingleton.instance) {
+            DOMCtrlSingleton.instance = new DOMCtrlSingleton({username, channel, websocket});
         }
 
-        return DOMCtrl.instance;
+        return DOMCtrlSingleton.instance;
     }
 
     init() {
@@ -40,7 +66,7 @@ class DOMCtrl {
                 "channel": this.channel ? this.channel.toString() : this.channelsInput.value
             };
 
-            this.websocket.send(
+            this._websocket.send(
                 new Message({
                     content: JSON.stringify(content),
                     action: MsgActions.JOINCHANNEL
@@ -50,19 +76,35 @@ class DOMCtrl {
             this.msgDiv.style.display = "block";
             this.msgForm.addEventListener("submit", (e) => {
                 e.preventDefault();
-                this.websocket.send(
+                this._websocket.send(
                     new Message({
                         content: this.msgInput.value,
                         action: MsgActions.MSG,
                         user
                     })
                 );
+                this.msgInput.value = "";
             });
         });
+    }
+
+    outputMsg(msg) {
+        let author = document.createElement("span");
+        author.classList.add("author");
+        author.appendChild(document.createTextNode((msg.user._name || msg.user) + ": "));
+        let msgContent = document.createElement("span");
+        msgContent.classList.add("msg-content");
+        msgContent.appendChild(document.createTextNode(msg.content));
+        let msgDiv = document.createElement("div");
+        msgDiv.appendChild(author);
+        msgDiv.appendChild(msgContent);
+        return this.messages.appendChild(msgDiv)
     }
 }
 
 class WSCtrl {
+
+    _dom = null;
 
     constructor(url = "ws://127.0.0.1:8080") {
         this._websocket = new WebSocket(url);
@@ -90,27 +132,36 @@ class WSCtrl {
         console.log("msg", msg);
         switch (msg.action) {
             case MsgActions.MSG:
+            case MsgActions.ACK:
                 if (msg.user) {
                     console.log("Parsed message from ", msg.user);
                 }
+                if (this._dom) {
+                    this._dom.outputMsg(new Message({
+                        content: msg.content,
+                        user: msg.user
+                    }));
+                }
+
                 break;
             case MsgActions.SYNACK:
                 user = new Participant(
                     msg.content._id,
-                    msg.content.name,
+                    msg.content._name,
                     msg.content._channel
                 );
-                // console.log("msg.content: ", msg.content);
-                // let participant = JSON.parse(msg.content);
-                // user = new Participant(
-                //     participant._id, participant._name, participant._channel
-                // );
-                console.log("Parsed JOINCHANNEL message from username: ", participant.username, " for channel ", participant.channel);
-                console.log("user: ", user);
+                console.log("Parsed JOINCHANNEL message from user: ", user);
+                this._dom = DOMCtrlSingleton.getInstance({});
+                this._dom.username = user.name;
+                this._dom.channel = user.channel;
+                this._dom.outputMsg(new Message({
+                    content: `User ${user.name} joined`,
+                    user: "Server"
+                }))
                 break;
-            case MsgActions.ACK:
-                console.log("ACK: ", msg);
-                break;
+            // case MsgActions.ACK:
+            //     console.log("ACK: ", msg);
+            //     break;
             default:
                 console.log("Cannot parse message action: ", msg.action);
                 console.log("msg: ", msg);
@@ -135,7 +186,7 @@ window.onload = function(e) {
     });
 
     let wsCtrl = new WSCtrl("ws://127.0.0.1:8080");
-    let domCtrl = DOMCtrl.getInstance({
+    let domCtrl = DOMCtrlSingleton.getInstance({
         username,
         channel,
         websocket: wsCtrl.websocket});
