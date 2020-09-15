@@ -39,10 +39,10 @@ class Message {
 
         switch (msg.action) {
             case MsgActions.MSG:
-                if (msg.user) {
-                    console.log("Parsed message from ", msg.user);
-                }
-                console.log("Message content: ", msg.content);
+                // if (msg.user) {
+                //     console.log("Parsed message from ", msg.user);
+                // }
+                // console.log("Message content: ", msg.content);
                 return new Message({
                     content: msg.content,
                     action: MsgActions.ACK,
@@ -51,11 +51,11 @@ class Message {
                 });
             case MsgActions.JOINCHANNEL:
                 let participant = JSON.parse(msg.content);
-                console.log("Parsed JOINCHANNEL message from username: ", participant.username, " for channel ", participant.channel);
+                // console.log("Parsed JOINCHANNEL message from username: ", participant.username, " for channel ", participant.channel);
                 let p = new Participant(
                     uuidv4(), participant.username, participant.channel
                 );
-                console.log(p);
+                // console.log(p);
                 return new Message({
                     content: p,
                     action: MsgActions.SYNACK,
@@ -120,4 +120,4 @@ class Message {
     }
 }
 
-module.exports = {Message, MsgActions};
+module.exports = {Message, MsgActions, MsgTargets};

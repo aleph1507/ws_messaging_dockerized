@@ -76,6 +76,7 @@ class DOMCtrlSingleton {
             this.msgDiv.style.display = "block";
             this.msgForm.addEventListener("submit", (e) => {
                 e.preventDefault();
+                console.log("user: ", user);
                 this._websocket.send(
                     new Message({
                         content: this.msgInput.value,
@@ -124,6 +125,7 @@ class WSCtrl {
     }
 
     messageHandler(msg) {
+        console.log("messageHandler");
         try {
             msg = JSON.parse(msg);
         } catch (e) {
