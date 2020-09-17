@@ -23,3 +23,5 @@ class RedisCtrl {
         this.subscriber.subscribe(channel);
     }
 }
+
+module.exports = RedisCtrl;

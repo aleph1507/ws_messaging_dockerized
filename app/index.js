@@ -1,8 +1,8 @@
 const path = require("path");
 const http = require("http");
 const express = require("express");
-// const redis = require("redis");
-const redisCtrl = require("./utils/RedisCtrl");
+const redis = require("redis");
+// const redisCtrl = require("./utils/RedisCtrl");
 const WebSocketServer = require("websocket").server;
 // const WS = require("./models/Websocket");
 const {Message, MsgActions, MsgTargets} = require("./models/Message");
@@ -18,28 +18,32 @@ const websocket = new WebSocketServer({
 
 app.use(express.static(path.join(__dirname, "public")));
 
-const redis = new redisCtrl();
+// const redis = new redisCtrl();
 
-// const subscriber = redis.createClient({
-//     port      : 6379,
-//     host      : 'rds'
-// });
-//
-// const publisher = redis.createClient({
-//     port      : 6379,
-//     host      : 'rds'
-// });
+const subscriber = redis.createClient({
+    port      : 6379,
+    host      : 'rds'
+});
 
-// subscriber.on("message", function(channel, message) {
-    // console.log(`subscriber.on message,
-    //  channel: ${channel},
-    //  message: ${message}`);
-// });
+const publisher = redis.createClient({
+    port      : 6379,
+    host      : 'rds'
+});
 
-// console.log(
-//     "subscriber.subscribe(\"broadcast\"): ", subscriber.subscribe("broadcast"));
+subscriber.on("message", function(channel, message) {
+    console.log(`subscriber.on message,
+     channel: ${channel},
+     message: ${message}`);
 
-// subscriber.subscribe("broadcast");
+    // try {
+    //
+    // }
+});
+
+console.log(
+    "subscriber.subscribe(\"broadcast\"): ", subscriber.subscribe("broadcast"));
+
+subscriber.subscribe("broadcast");
 
 websocket.on("request", function(request) {
     console.log("websocket.on request");
